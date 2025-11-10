@@ -1,6 +1,4 @@
-def main():
-    print("Hello from igp-pe!")
-
+from src.pmain import main_loop
 
 if __name__ == "__main__":
-    main()
+    main_loop()
