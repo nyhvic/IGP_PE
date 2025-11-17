@@ -1,5 +1,6 @@
 import pygame as pg
-from src.particle import Particle
+from src.particle import Particle,collisionCheckParticle
+import random
 
 
 pg.init()
@@ -9,7 +10,15 @@ FPS = 60
 screen = pg.display.set_mode((WIDTH,HEIGHT))
 clock = pg.time.Clock()
 particleGroup = pg.sprite.Group()
-p1 = Particle(color='red', groups=particleGroup,size = 50, ax=10,ay=10,x=WIDTH/2,y=HEIGHT/2)
+
+for _ in range(100):
+    x = random.uniform(0, WIDTH)
+    y = random.uniform(0, HEIGHT)
+    vx = random.uniform(-100, 100) 
+    vy = random.uniform(-100, 100)
+    size = 4
+    color = 'white'
+    Particle(color=color, groups=particleGroup, vx=vx, vy=vy, x=x, y=y, size=size)
 
 def main_loop():
     while True:
@@ -19,6 +28,12 @@ def main_loop():
 
         dt = clock.tick(60)/1000
         screen.fill((0,0,0))
+
+        collisionCheckParticle(particleGroup)
+
         particleGroup.draw(screen)
         particleGroup.update(dt)
         pg.display.update()
+
+
+main_loop()
