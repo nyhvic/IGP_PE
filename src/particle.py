@@ -1,8 +1,8 @@
 import pygame as pg
-import random
+import src.constans as C    
 
 class Particle(pg.sprite.Sprite):
-    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = 0, vx = 0, vy = 0, x = 0, y = 0,size = 4):
+    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,size = 4):
         super().__init__(groups)
         self.mass = mass
         self.a = pg.math.Vector2(ax,ay)
@@ -10,7 +10,7 @@ class Particle(pg.sprite.Sprite):
         self.pos = pg.math.Vector2(x,y)
         self.size = size
         self.color = color
-        self.lifetime = 10
+        self.lifetime = 1000
         self.createSurf()
 
     def createSurf(self):
@@ -33,6 +33,12 @@ class Particle(pg.sprite.Sprite):
         if self.lifetime <= 0:
             self.kill()    
 
+    def checkOut(self):
+        if self.pos.x<0 or self.pos.x>C.WIDTH:
+            self.kill()
+        if self.pos.y<0 or self.pos.y>C.HEIGHT:
+            self.kill()
+
     def handleCollision(self,other):
         if isinstance(other,Particle):
             normal = (self.pos-other.pos).normalize()
@@ -46,6 +52,43 @@ class Particle(pg.sprite.Sprite):
         self.move(dt)
         self.lifeCycle(dt)
         self.checkLife()
+        self.checkOut()
+
+class SolidParticle(Particle):
+    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, size=4):
+        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, size)
+
+    def handleCollision(self, other):
+        if isinstance(other,SolidParticle):
+            normal = (self.pos-other.pos).normalize()
+            self.v.reflect_ip(normal)
+        elif isinstance(other,FluidParticle):
+            effect = other.v*0.1
+            self.v+=effect
+
+
+
+class FluidParticle(Particle):
+    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,size = 4):
+        super().__init__(color,groups,mass,ax,ay,vx,vy,x,y,size)
+        self.combine=False
+        self.group = groups
+
+    def handleCollision(self,other):
+        if isinstance(other,SolidParticle):
+            effect = other.v*0.1
+            self.v+=effect
+            self.lifetime = 1
+        elif isinstance(other,FluidParticle):
+            if self.combine or other.combine:
+                return
+            middle = (self.pos+other.pos)/2
+            FluidParticle(color='blue',groups=self.group,vx=(self.v.x+other.v.y)/2,vy=(self.v.y+other.v.y)/2,x=middle.x,y=middle.y,size=(self.size+other.size)*0.7)
+            self.combine=True
+            other.combine=True
+            self.lifetime=0.1
+            other.lifetime=0.1
+
 
 
 
