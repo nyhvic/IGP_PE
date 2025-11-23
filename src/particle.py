@@ -61,7 +61,11 @@ class SolidParticle(Particle):
     def handleCollision(self, other):
         if isinstance(other,SolidParticle):
             normal = (self.pos-other.pos).normalize()
-            self.v.reflect_ip(normal)
+            diff = self.v-other.v
+            p = diff.dot(normal)*normal
+            self.v-=p
+            other.v+=p
+
         elif isinstance(other,FluidParticle):
             effect = other.v*0.1
             self.v+=effect
@@ -96,6 +100,6 @@ def collisionCheckParticle(particleGroup):
     collisions = pg.sprite.groupcollide(particleGroup, particleGroup, False, False, pg.sprite.collide_circle)
     for p1, collided_list in collisions.items():
         for p2 in collided_list:
-            if p1 == p2:
+            if id(p1) >= id(p2):
                 continue
             p1.handleCollision(p2)
