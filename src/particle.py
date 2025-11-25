@@ -44,15 +44,13 @@ class Particle(pg.sprite.Sprite):
             normal = (self.pos-other.pos).normalize()
             self.v.reflect_ip(normal)
 
-
-
-
     def update(self,dt):
         self.accel(dt)
         self.move(dt)
         self.lifeCycle(dt)
         self.checkLife()
         self.checkOut()
+
 
 class SolidParticle(Particle):
     def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, size=4):
@@ -94,6 +92,11 @@ class FluidParticle(Particle):
             other.lifetime=0.1
 
 
+class GasParticle(Particle):
+    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, size=4):
+        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, size)
+
+
 
 
 def collisionCheckParticle(particleGroup):
@@ -103,3 +106,33 @@ def collisionCheckParticle(particleGroup):
             if id(p1) >= id(p2):
                 continue
             p1.handleCollision(p2)
+
+
+
+def checkCollisionsGrid(particles, cell_size=16):
+    grid = {}
+    
+    for p in particles:
+        grid_x = int(p.pos.x // cell_size)
+        grid_y = int(p.pos.y // cell_size)
+        key = (grid_x, grid_y)
+        
+        if key not in grid:
+            grid[key] = []
+        grid[key].append(p)
+
+    neighbor_offsets = [(0,0),(1,0),(0,1),(1,1)]
+
+    for (gx, gy), cell_particles in grid.items():
+        for p1 in cell_particles:
+            for dx, dy in neighbor_offsets:
+                neighbor_key = (gx + dx, gy + dy)
+                if neighbor_key in grid:
+                    for p2 in grid[neighbor_key]:
+                        if id(p1) >= id(p2):
+                            continue
+                        dist = p1.pos.distance_squared_to(p2.pos)
+                        radius = (p1.size + p2.size) / 2
+                        
+                        if dist < radius ** 2:
+                            p1.handleCollision(p2)

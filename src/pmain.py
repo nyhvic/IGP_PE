@@ -1,5 +1,5 @@
 import pygame as pg
-from src.particle import Particle,collisionCheckParticle, SolidParticle, FluidParticle
+from src.particle import Particle,collisionCheckParticle, SolidParticle, FluidParticle, checkCollisionsGrid
 import random
 import src.constans as C
 
@@ -9,7 +9,7 @@ screen = pg.display.set_mode((C.WIDTH,C.HEIGHT))
 clock = pg.time.Clock()
 particleGroup = pg.sprite.Group()
 
-for _ in range(100):
+for _ in range(3000):
     x = random.uniform(0, C.WIDTH)
     y = random.uniform(0, C.HEIGHT)
     vx = random.uniform(-100, 100) 
@@ -35,7 +35,8 @@ def main_loop():
         dt = clock.tick(C.FPS)/1000
         screen.fill((0,0,0))
 
-        collisionCheckParticle(particleGroup)
+        #collisionCheckParticle(particleGroup)
+        checkCollisionsGrid(particleGroup)
 
         particleGroup.draw(screen)
         particleGroup.update(dt)
