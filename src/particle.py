@@ -74,7 +74,7 @@ class FluidParticle(Particle):
     def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,size = 4):
         super().__init__(color,groups,mass,ax,ay,vx,vy,x,y,size)
         self.combine=False
-        self.group = groups
+        self.group = groups 
 
     def handleCollision(self,other):
         if isinstance(other,SolidParticle):
@@ -93,8 +93,13 @@ class FluidParticle(Particle):
 
 
 class GasParticle(Particle):
-    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, size=4):
+    def __init__(self, color, groups, mass=1, ax=0, ay=-C.G//2, vx=0, vy=0, x=0, y=0, size=4):
         super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, size)
+        self.image.set_alpha(128)
+
+    def handleCollision(self, other):
+        if(not isinstance(other,GasParticle)):
+            self.lifetime=0.1
 
 
 
