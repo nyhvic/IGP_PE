@@ -18,13 +18,13 @@ particleGroup = pg.sprite.Group()
 #     color = 'white'
 #     SolidParticle(color=color, groups=particleGroup, vx=vx, vy=vy, x=x, y=y, size=size)
 
-for _ in range(1000):
+for _ in range(1):
     x = random.uniform(300,600)
     y = random.uniform(200,500)
     vx = random.uniform(-100, 100) 
     vy = random.uniform(-100, 100)
-    size = 4
-    SolidParticle(color='white',groups=particleGroup, vx=vx, vy=vy, x=x, y=y, size=size)
+    radius = 16
+    FluidParticle(color='blue',groups=particleGroup, vx=vx, vy=vy, x=x, y=y,radius=radius)
 
 def main_loop():
     while True:

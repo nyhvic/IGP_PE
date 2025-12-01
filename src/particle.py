@@ -2,21 +2,21 @@ import pygame as pg
 import src.constans as C    
 
 class Particle(pg.sprite.Sprite):
-    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,size = 4):
+    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 2):
         super().__init__(groups)
         self.mass = mass
         self.a = pg.math.Vector2(ax,ay)
         self.v = pg.math.Vector2(vx,vy)
         self.pos = pg.math.Vector2(x,y)
-        self.size = size
+        self.radius = radius
         self.color = color
         self.lifetime = 1000
         self.createSurf()
 
     def createSurf(self):
-        self.image = pg.Surface((self.size, self.size)).convert_alpha()
+        self.image = pg.Surface((self.radius*2, self.radius*2)).convert_alpha()
         self.image.set_colorkey('black')
-        pg.draw.circle(surface=self.image, color=self.color, center=(self.size / 2, self.size / 2), radius=self.size / 2)
+        pg.draw.circle(surface=self.image, color=self.color, center=(self.radius, self.radius), radius=self.radius)
         self.rect = self.image.get_rect(center=self.pos)
 
     # 오일러 메소드 (1st order)
@@ -33,7 +33,7 @@ class Particle(pg.sprite.Sprite):
         self.pos+=self.v*dt
         self.rect.center = (int(self.pos.x), int(self.pos.y))
         #self.a가 self.pos에 의해 바뀌면... do something
-        
+
         self.v+=0.5*self.a*dt
 
     def lifeCycle(self, dt):
@@ -62,8 +62,8 @@ class Particle(pg.sprite.Sprite):
 
 
 class SolidParticle(Particle):
-    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, size=4):
-        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, size)
+    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, radius=2):
+        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, radius)
         self.e=0.7
 
     def handleCollision(self, other):
@@ -92,10 +92,30 @@ class SolidParticle(Particle):
 
 
 class FluidParticle(Particle):
-    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,size = 4):
-        super().__init__(color,groups,mass,ax,ay,vx,vy,x,y,size)
+    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 16):
+        pg.sprite.Sprite.__init__(self,groups)
+        self.mass = mass
+        self.a = pg.math.Vector2(ax,ay)
+        self.v = pg.math.Vector2(vx,vy)
+        self.pos = pg.math.Vector2(x,y)
+        self.radius = radius #smoothing length
+        self.color = color
+        self.lifetime = 1000
+
         self.combine=False
         self.group = groups 
+        self.density = 0
+        self.pressure = pg.math.Vector2(0,0)
+        self.mradius = radius/4 # middlepoint
+        self.createSurf()
+
+
+    def createSurf(self):
+        self.image = pg.Surface((self.radius*2, self.radius*2)).convert_alpha()
+        self.image.set_colorkey('black')
+        pg.draw.circle(surface=self.image, color=(0,0,255,100), center=(self.radius, self.radius), radius=self.radius)
+        pg.draw.circle(surface=self.image,color = self.color,center=(self.radius,self.radius),radius=self.mradius)
+        self.rect = self.image.get_rect(center=self.pos)
 
     def handleCollision(self,other):
         if isinstance(other,SolidParticle):
@@ -103,10 +123,11 @@ class FluidParticle(Particle):
             self.v+=effect
             self.lifetime = 1
         elif isinstance(other,FluidParticle):
+            #물체가 합쳐지는 충돌
             if self.combine or other.combine:
                 return
             middle = (self.pos+other.pos)/2
-            FluidParticle(color='blue',groups=self.group,vx=(self.v.x+other.v.y)/2,vy=(self.v.y+other.v.y)/2,x=middle.x,y=middle.y,size=(self.size+other.size)*0.7)
+            FluidParticle(color='blue',groups=self.group,vx=(self.v.x+other.v.y)/2,vy=(self.v.y+other.v.y)/2,x=middle.x,y=middle.y,radius=(self.radius+other.radius)*0.7)
             self.combine=True
             other.combine=True
             self.lifetime=0.1
@@ -114,8 +135,8 @@ class FluidParticle(Particle):
 
 
 class GasParticle(Particle):
-    def __init__(self, color, groups, mass=1, ax=0, ay=-C.G//2, vx=0, vy=0, x=0, y=0, size=4):
-        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, size)
+    def __init__(self, color, groups, mass=1, ax=0, ay=-C.G//2, vx=0, vy=0, x=0, y=0, radius=2):
+        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, radius)
         self.image.set_alpha(128)
 
     def handleCollision(self, other):
@@ -161,7 +182,7 @@ def checkCollisionsGrid(particles, cell_size=16):
                         if id(p1) >= id(p2):
                             continue
                         dist = p1.pos.distance_squared_to(p2.pos)
-                        radius = (p1.size + p2.size) / 2
+                        radius = (p1.radius + p2.radius) / 2
                         
                         if dist < radius ** 2:
                             p1.handleCollision(p2)
