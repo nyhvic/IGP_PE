@@ -19,12 +19,22 @@ class Particle(pg.sprite.Sprite):
         pg.draw.circle(surface=self.image, color=self.color, center=(self.size / 2, self.size / 2), radius=self.size / 2)
         self.rect = self.image.get_rect(center=self.pos)
 
-    def accel(self,dt):
-        self.v+=self.a*dt
+    # 오일러 메소드 (1st order)
+    # def accel(self,dt):
+    #     self.v+=self.a*dt
 
-    def move(self,dt):
+    # def move(self,dt):
+    #     self.pos+=self.v*dt
+    #     self.rect.center = (int(self.pos.x), int(self.pos.y))
+
+    def velocityVarlet(self,dt):
+        #Velocity Varlet 이용 (2nd order)
+        self.v+=0.5*self.a*dt
         self.pos+=self.v*dt
         self.rect.center = (int(self.pos.x), int(self.pos.y))
+        #self.a가 self.pos에 의해 바뀌면... do something
+        
+        self.v+=0.5*self.a*dt
 
     def lifeCycle(self, dt):
         self.lifetime-=dt
@@ -45,8 +55,7 @@ class Particle(pg.sprite.Sprite):
             self.v.reflect_ip(normal)
 
     def update(self,dt):
-        self.accel(dt)
-        self.move(dt)
+        self.velocityVarlet(dt)
         self.lifeCycle(dt)
         self.checkLife()
         self.checkOut()
@@ -55,14 +64,26 @@ class Particle(pg.sprite.Sprite):
 class SolidParticle(Particle):
     def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, size=4):
         super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, size)
+        self.e=0.7
 
     def handleCollision(self, other):
         if isinstance(other,SolidParticle):
-            normal = (self.pos-other.pos).normalize()
-            diff = self.v-other.v
-            p = diff.dot(normal)*normal
-            self.v-=p
-            other.v+=p
+            #배웠던 충돌 공식 사용
+            diff = self.pos - other.pos
+            dist = diff.length()
+            if dist == 0: 
+                return
+            normal = diff / dist
+
+            rvn = (self.v-other.v).dot(normal)
+            if rvn>0:
+                return
+            p = -(self.e+1)*rvn
+            p/= 2
+            pn=p*normal
+
+            other.v-=pn
+            self.v+=pn
 
         elif isinstance(other,FluidParticle):
             effect = other.v*0.1
@@ -105,6 +126,8 @@ class GasParticle(Particle):
 
 
 def collisionCheckParticle(particleGroup):
+    #pygame 라이브러리 내 충돌 판정
+    #group 내의 모든 object와 1ㄷ1 판정하는듯(느리다)
     collisions = pg.sprite.groupcollide(particleGroup, particleGroup, False, False, pg.sprite.collide_circle)
     for p1, collided_list in collisions.items():
         for p2 in collided_list:
@@ -115,6 +138,7 @@ def collisionCheckParticle(particleGroup):
 
 
 def checkCollisionsGrid(particles, cell_size=16):
+    #일정 크기 grid로 나누고 주변 grid 내의 object와 충돌 비교함
     grid = {}
     
     for p in particles:
