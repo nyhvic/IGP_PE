@@ -4,6 +4,7 @@ import src.constans as C
 class Particle(pg.sprite.Sprite):
     def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 2):
         super().__init__(groups)
+        self.e=0.7
         self.mass = mass
         self.a = pg.math.Vector2(ax,ay)
         self.v = pg.math.Vector2(vx,vy)
@@ -50,25 +51,7 @@ class Particle(pg.sprite.Sprite):
             self.kill()
 
     def handleCollision(self,other):
-        if isinstance(other,Particle):
-            normal = (self.pos-other.pos).normalize()
-            self.v.reflect_ip(normal)
-
-    def update(self,dt):
-        self.velocityVarlet(dt)
-        self.lifeCycle(dt)
-        self.checkLife()
-        self.checkOut()
-
-
-class SolidParticle(Particle):
-    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, radius=2):
-        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, radius)
-        self.e=0.7
-
-    def handleCollision(self, other):
-        if isinstance(other,SolidParticle):
-            #배웠던 충돌 공식 사용
+        #배웠던 충돌 공식 사용
             diff = self.pos - other.pos
             dist = diff.length()
             if dist == 0: 
@@ -85,6 +68,21 @@ class SolidParticle(Particle):
             other.v-=pn
             self.v+=pn
 
+    def update(self,dt):
+        self.velocityVarlet(dt)
+        self.lifeCycle(dt)
+        self.checkLife()
+        self.checkOut()
+
+
+class SolidParticle(Particle):
+    def __init__(self, color, groups, mass=1, ax=0, ay=C.G, vx=0, vy=0, x=0, y=0, radius=2):
+        super().__init__(color, groups, mass, ax, ay, vx, vy, x, y, radius)
+
+    def handleCollision(self, other):
+        if isinstance(other,SolidParticle):
+            super().handleCollision(other)
+
         elif isinstance(other,FluidParticle):
             effect = other.v*0.1
             self.v+=effect
@@ -94,6 +92,7 @@ class SolidParticle(Particle):
 class FluidParticle(Particle):
     def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 16):
         pg.sprite.Sprite.__init__(self,groups)
+        self.e=0.7
         self.mass = mass
         self.a = pg.math.Vector2(ax,ay)
         self.v = pg.math.Vector2(vx,vy)
@@ -101,9 +100,6 @@ class FluidParticle(Particle):
         self.radius = radius #smoothing length
         self.color = color
         self.lifetime = 1000
-
-        self.combine=False
-        self.group = groups 
         self.density = 0
         self.pressure = pg.math.Vector2(0,0)
         self.mradius = radius/4 # middlepoint
@@ -122,16 +118,13 @@ class FluidParticle(Particle):
             effect = other.v*0.1
             self.v+=effect
             self.lifetime = 1
-        elif isinstance(other,FluidParticle):
-            #물체가 합쳐지는 충돌
-            if self.combine or other.combine:
-                return
-            middle = (self.pos+other.pos)/2
-            FluidParticle(color='blue',groups=self.group,vx=(self.v.x+other.v.y)/2,vy=(self.v.y+other.v.y)/2,x=middle.x,y=middle.y,radius=(self.radius+other.radius)*0.7)
-            self.combine=True
-            other.combine=True
-            self.lifetime=0.1
-            other.lifetime=0.1
+        else:
+            super().handleCollision(other)
+
+    def initDensityPressure(self):
+        self.density = 0
+        self.pressure = pg.math.Vector2(0,0)
+            
 
 
 class GasParticle(Particle):
@@ -186,3 +179,17 @@ def checkCollisionsGrid(particles, cell_size=16):
                         
                         if dist < radius ** 2:
                             p1.handleCollision(p2)
+
+
+
+'''
+all particle group 만들어서 checkcollision 처리
+fluid particle group에서 인접 particle 처리
+
+
+fluid 초기화
+all particle 충돌 처리
+update (fluid 는 velocity varlet에서 마지막 v+1/2a는 안함)
+fluid nearby 계산
+fluid particle 마지막 v+1/2a (위치 변경에 의해 바뀐 a 적용)
+'''

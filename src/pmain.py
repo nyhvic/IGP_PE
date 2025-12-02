@@ -1,6 +1,7 @@
 import pygame as pg
-from src.particle import Particle,collisionCheckParticle, SolidParticle, FluidParticle, checkCollisionsGrid, GasParticle
+from src.particle import *
 import random
+from src.fluidGroup import FluidGroup
 import src.constans as C
 
 
@@ -8,6 +9,7 @@ pg.init()
 screen = pg.display.set_mode((C.WIDTH,C.HEIGHT))
 clock = pg.time.Clock()
 particleGroup = pg.sprite.Group()
+fluidParticleGroup = FluidGroup()
 
 # for _ in range(1000):
 #     x = random.uniform(0, C.WIDTH)
@@ -18,13 +20,13 @@ particleGroup = pg.sprite.Group()
 #     color = 'white'
 #     SolidParticle(color=color, groups=particleGroup, vx=vx, vy=vy, x=x, y=y, size=size)
 
-for _ in range(1):
+for _ in range(1000):
     x = random.uniform(300,600)
     y = random.uniform(200,500)
     vx = random.uniform(-100, 100) 
     vy = random.uniform(-100, 100)
     radius = 16
-    FluidParticle(color='blue',groups=particleGroup, vx=vx, vy=vy, x=x, y=y,radius=radius)
+    FluidParticle(color='blue',groups=(particleGroup,fluidParticleGroup), vx=vx, vy=vy, x=x, y=y,radius=radius)
 
 def main_loop():
     while True:
@@ -36,10 +38,11 @@ def main_loop():
         screen.fill((0,0,0))
 
         #collisionCheckParticle(particleGroup)
+        fluidParticleGroup.initDensityPressure()
         checkCollisionsGrid(particleGroup)
+        particleGroup.update(dt)
 
         particleGroup.draw(screen)
-        particleGroup.update(dt)
         pg.display.update()
 
 
