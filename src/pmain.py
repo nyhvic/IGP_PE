@@ -1,7 +1,7 @@
 import pygame as pg
 from src.particle import *
 import random
-from src.fluidGroup import FluidGroup
+from src.groups import *
 import src.constans as C
 
 
@@ -23,8 +23,8 @@ fluidParticleGroup = FluidGroup()
 for _ in range(1000):
     x = random.uniform(300,600)
     y = random.uniform(200,500)
-    vx = random.uniform(-100, 100) 
-    vy = random.uniform(-100, 100)
+    vx = random.uniform(-10, 10) 
+    vy = random.uniform(-10, 10)
     radius = 16
     FluidParticle(color='blue',groups=(particleGroup,fluidParticleGroup), vx=vx, vy=vy, x=x, y=y,radius=radius)
 

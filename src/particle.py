@@ -1,5 +1,6 @@
 import pygame as pg
 import src.constans as C    
+from math import pi
 
 class Particle(pg.sprite.Sprite):
     def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 2):
@@ -47,8 +48,12 @@ class Particle(pg.sprite.Sprite):
     def checkOut(self):
         if self.pos.x<0 or self.pos.x>C.WIDTH:
             self.kill()
-        if self.pos.y<0 or self.pos.y>C.HEIGHT:
+        if self.pos.y<0:
             self.kill()
+        if self.pos.y>C.HEIGHT:
+            self.pos.y = C.HEIGHT-10
+            self.rect.center = (int(self.pos.x),int(self.pos.y))
+            self.v.y=0
 
     def handleCollision(self,other):
         #배웠던 충돌 공식 사용
@@ -90,7 +95,8 @@ class SolidParticle(Particle):
 
 
 class FluidParticle(Particle):
-    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 16):
+    # Fluid 구성 입자들은 mass 1, smoothing radius(radius) 동일 가정
+    def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 8):
         pg.sprite.Sprite.__init__(self,groups)
         self.e=0.7
         self.mass = mass
@@ -124,7 +130,51 @@ class FluidParticle(Particle):
     def initDensityPressure(self):
         self.density = 0
         self.pressure = pg.math.Vector2(0,0)
-            
+
+    def velocityVarletHalf(self,dt):
+        #Velocity Varlet 이용 (2nd order)
+        self.v+=0.5*self.a*dt
+        self.pos+=self.v*dt
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
+
+    def velocityVarletEnd(self,dt):
+        #self.a가 self.pos에 의해 바뀜
+        self.a = pg.Vector2(0,C.G) + self.pressure # 압력으로 인한 a = pressure/mass  mass=1
+        self.v+=0.5*self.a*dt
+
+    def update(self,dt):
+        self.velocityVarletHalf(dt)
+        self.lifeCycle(dt)
+        self.checkLife()
+        self.checkOut()
+
+    def makeDensity(self,p2,dist):
+        #Poly6 커널함수 이용해 density 추가
+        #315(smoothing_radius**2-dist**2)**3 / 64pismoothing_radius**9
+        #약 4.9
+        c = 4.0/(pi*self.radius**8)
+        w = c*(self.radius**2-dist**2)**3
+        self.density += w
+        p2.density += w
+
+    def densityToSPressure(self):
+        #밀도를 압력으로 변환
+        # K(density-optimaldensity)  K : 충분히 큰 상수(200) optimal_density : 상수(1)
+        return 1000 * (self.density-2)
+
+    def makePressure(self,p2,dirv,dist):
+        Pi = max(self.densityToSPressure(),0) #self density to pressure
+        Pj = (p2.densityToSPressure(),0) #p2 density to pressure
+
+        #Spiky 커널함수 gradient 이용 (Poly6은 x=0에서 미분불가?)
+        # -45(smoothing_radius-dist)**2 dirv / pi*smoothing_radius**6
+        c = -30/(pi*self.radius**5)
+        gradw = (c*(self.radius-dist)**2 )* dirv
+
+        # Fi(i(self)로의 압력) = -(Pi/self.density**2 + Pj/p2.density**2)grad(W(커널함수))
+        f = -(Pi/self.density**2 + Pj/p2.density**2) * gradw 
+        self.pressure+=f
+        p2.pressure-=f
 
 
 class GasParticle(Particle):
@@ -151,13 +201,13 @@ def collisionCheckParticle(particleGroup):
 
 
 
-def checkCollisionsGrid(particles, cell_size=16):
+def checkCollisionsGrid(particles, cellSize=16):
     #일정 크기 grid로 나누고 주변 grid 내의 object와 충돌 비교함
     grid = {}
     
     for p in particles:
-        grid_x = int(p.pos.x // cell_size)
-        grid_y = int(p.pos.y // cell_size)
+        grid_x = int(p.pos.x // cellSize)
+        grid_y = int(p.pos.y // cellSize)
         key = (grid_x, grid_y)
         
         if key not in grid:
@@ -179,17 +229,3 @@ def checkCollisionsGrid(particles, cell_size=16):
                         
                         if dist < radius ** 2:
                             p1.handleCollision(p2)
-
-
-
-'''
-all particle group 만들어서 checkcollision 처리
-fluid particle group에서 인접 particle 처리
-
-
-fluid 초기화
-all particle 충돌 처리
-update (fluid 는 velocity varlet에서 마지막 v+1/2a는 안함)
-fluid nearby 계산
-fluid particle 마지막 v+1/2a (위치 변경에 의해 바뀐 a 적용)
-'''
