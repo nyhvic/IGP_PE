@@ -46,14 +46,19 @@ class Particle(pg.sprite.Sprite):
             self.kill()    
 
     def checkOut(self):
-        if self.pos.x<0 or self.pos.x>C.WIDTH:
-            self.kill()
-        if self.pos.y<0:
-            self.kill()
-        if self.pos.y>C.HEIGHT:
-            self.pos.y = C.HEIGHT-10
-            self.rect.center = (int(self.pos.x),int(self.pos.y))
-            self.v.y=0
+        if self.pos.x < self.radius:
+            self.pos.x = self.radius
+            self.v.x = 0
+        elif self.pos.x > C.WIDTH - self.radius:
+            self.pos.x = C.WIDTH - self.radius
+            self.v.x = 0
+        if self.pos.y < self.radius:
+            self.pos.y = self.radius
+            self.v.y = 0
+        elif self.pos.y > C.HEIGHT - self.radius:
+            self.pos.y = C.HEIGHT - self.radius
+            self.v.y = 0
+
 
     def handleCollision(self,other):
         #배웠던 충돌 공식 사용
@@ -152,14 +157,14 @@ class FluidParticle(Particle):
         #Poly6 커널함수 이용해 density 추가
         #315(smoothing_radius**2-dist**2)**3 / 64pismoothing_radius**9
         #약 4.9
-        c = 4.0/(pi*self.radius**8)
+        c = 4.9/(pi*self.radius**9)
         w = c*(self.radius**2-dist**2)**3
         self.density += w
         p2.density += w
 
     def densityToSPressure(self):
         #밀도를 압력으로 변환
-        # K(density-optimaldensity)  K : 충분히 큰 상수(200) optimal_density : 상수(1)
+        # K(density-optimaldensity)  K : 충분히 큰 상수 optimal_density : 상수
         return 1000 * (self.density-2)
 
     def makePressure(self,p2,dirv,dist):
@@ -168,7 +173,7 @@ class FluidParticle(Particle):
 
         #Spiky 커널함수 gradient 이용 (Poly6은 x=0에서 미분불가?)
         # -45(smoothing_radius-dist)**2 dirv / pi*smoothing_radius**6
-        c = -30/(pi*self.radius**5)
+        c = -45/(pi*self.radius**6)
         gradw = (c*(self.radius-dist)**2 )* dirv
 
         # Fi(i(self)로의 압력) = -(Pi/self.density**2 + Pj/p2.density**2)grad(W(커널함수))
