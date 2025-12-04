@@ -48,16 +48,16 @@ class Particle(pg.sprite.Sprite):
     def checkOut(self):
         if self.pos.x < self.radius:
             self.pos.x = self.radius
-            self.v.x = 0
+            self.v.x *=-0.2
         elif self.pos.x > C.WIDTH - self.radius:
             self.pos.x = C.WIDTH - self.radius
-            self.v.x = 0
+            self.v.x *=-0.2
         if self.pos.y < self.radius:
             self.pos.y = self.radius
-            self.v.y = 0
+            self.v.y *=-0.2
         elif self.pos.y > C.HEIGHT - self.radius:
             self.pos.y = C.HEIGHT - self.radius
-            self.v.y = 0
+            self.v.y *=-0.2
 
 
     def handleCollision(self,other):
@@ -72,11 +72,15 @@ class Particle(pg.sprite.Sprite):
             if rvn>0:
                 return
             p = -(self.e+1)*rvn
-            p/= 2
+            p /= 2
             pn=p*normal
 
             other.v-=pn
             self.v+=pn
+
+            pene = 0.05*(self.radius+other.radius - dist)
+            other.pos-= pene*normal
+            self.pos+= pene*normal
 
     def update(self,dt):
         self.velocityVarlet(dt)
@@ -165,7 +169,7 @@ class FluidParticle(Particle):
     def densityToSPressure(self):
         #밀도를 압력으로 변환
         # K(density-optimaldensity)  K : 충분히 큰 상수 optimal_density : 상수
-        return 1000 * (self.density-2)
+        return 5000* (self.density-1)
 
     def makePressure(self,p2,dirv,dist):
         Pi = max(self.densityToSPressure(),0) #self density to pressure

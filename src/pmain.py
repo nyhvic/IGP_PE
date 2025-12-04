@@ -25,7 +25,7 @@ for _ in range(1000):
     y = random.uniform(200,500)
     vx = random.uniform(-10, 10) 
     vy = random.uniform(-10, 10)
-    radius = 16
+    radius = 8
     FluidParticle(color='blue',groups=(particleGroup,fluidParticleGroup), vx=vx, vy=vy, x=x, y=y,radius=radius)
 
 def main_loop():
