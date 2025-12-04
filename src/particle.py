@@ -238,3 +238,17 @@ def checkCollisionsGrid(particles, cellSize=16):
                         
                         if dist < radius ** 2:
                             p1.handleCollision(p2)
+
+
+
+'''
+all particle group
+
+particle manager
+
+점성 적용
+
+테스트/시연용 (단축키, 배치, clear)
+
+fire, explosion
+'''
