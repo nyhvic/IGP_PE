@@ -1,4 +1,4 @@
 WIDTH = 1600
 HEIGHT = 900
 FPS = 60
-G=30
+G=50

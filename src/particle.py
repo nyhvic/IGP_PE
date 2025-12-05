@@ -176,7 +176,7 @@ class FluidParticle(Particle):
     def densityToSPressure(self):
         #밀도를 압력으로 변환
         # K(density-optimaldensity)  K : 충분히 큰 상수 optimal_density : 상수
-        return 1500* (self.density-0.05)
+        return 30000* (self.density-0.05)
 
     def makePressure(self,p2,dirv,dist):
         Pi = max(self.densityToSPressure(),0) #self density to pressure
@@ -195,7 +195,7 @@ class FluidParticle(Particle):
     def makeViscosity(self,p2,dist):
         #점성 추가
         # 2D viscosity 함수 라플라시안 사용
-        u = 0.01
+        u = 0.03
         c = 20 / (pi*self.radius**5)
         lapw = c*(self.radius-dist)
         self.viscosity += u*(p2.v-self.v) * lapw
