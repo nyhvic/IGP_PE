@@ -49,11 +49,14 @@ class FluidGroup(pg.sprite.Group):
                                 continue
                             
                             distv = p1.pos-p2.pos
-                            dist = distv.length()
+                            dist = max(distv.length(),1.e-8)
                             dirv = distv/dist
                             if 0 < dist <= p1.radius:
                                 p1.makePressure(p2,dirv,dist)
+                                p1.makeViscosity(p2,dist)
 
         #velocity Varlet 마저 업데이트
         for p in self.sprites():
             p.velocityVarletEnd(dt)
+
+

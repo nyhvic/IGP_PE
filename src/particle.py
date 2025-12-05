@@ -48,16 +48,16 @@ class Particle(pg.sprite.Sprite):
     def checkOut(self):
         if self.pos.x < self.radius:
             self.pos.x = self.radius
-            self.v.x *=-0.2
+            self.v.x *=-0.3
         elif self.pos.x > C.WIDTH - self.radius:
             self.pos.x = C.WIDTH - self.radius
-            self.v.x *=-0.2
+            self.v.x *=-0.3
         if self.pos.y < self.radius:
             self.pos.y = self.radius
-            self.v.y *=-0.2
+            self.v.y *=-0.3
         elif self.pos.y > C.HEIGHT - self.radius:
             self.pos.y = C.HEIGHT - self.radius
-            self.v.y *=-0.2
+            self.v.y *=-0.3
 
 
     def handleCollision(self,other):
@@ -78,7 +78,7 @@ class Particle(pg.sprite.Sprite):
             other.v-=pn
             self.v+=pn
 
-            pene = 0.05*(self.radius+other.radius - dist)
+            pene = 0.2*(self.radius+other.radius - dist)
             other.pos-= pene*normal
             self.pos+= pene*normal
 
@@ -107,7 +107,7 @@ class FluidParticle(Particle):
     # Fluid 구성 입자들은 mass 1, smoothing radius(radius) 동일 가정
     def __init__(self, color, groups:pg.sprite.Group,mass = 1, ax = 0, ay = C.G, vx = 0, vy = 0, x = 0, y = 0,radius = 8):
         pg.sprite.Sprite.__init__(self,groups)
-        self.e=0.7
+        self.e=0.5
         self.mass = mass
         self.a = pg.math.Vector2(ax,ay)
         self.v = pg.math.Vector2(vx,vy)
@@ -115,8 +115,9 @@ class FluidParticle(Particle):
         self.radius = radius #smoothing length
         self.color = color
         self.lifetime = 1000
-        self.density = 0
+        self.density = 1.e-8
         self.pressure = pg.math.Vector2(0,0)
+        self.viscosity = pg.math.Vector2(0,0)
         self.mradius = radius/4 # middlepoint
         self.createSurf()
 
@@ -137,7 +138,7 @@ class FluidParticle(Particle):
             super().handleCollision(other)
 
     def initDensityPressure(self):
-        self.density = 0
+        self.density = 1.e-8
         self.pressure = pg.math.Vector2(0,0)
 
     def velocityVarletHalf(self,dt):
@@ -148,7 +149,7 @@ class FluidParticle(Particle):
 
     def velocityVarletEnd(self,dt):
         #self.a가 self.pos에 의해 바뀜
-        self.a = pg.Vector2(0,C.G) + self.pressure # 압력으로 인한 a = pressure/mass  mass=1
+        self.a = pg.Vector2(0,C.G) + self.pressure + self.viscosity# 압력으로 인한 a = pressure/mass  mass=1
         self.v+=0.5*self.a*dt
 
     def update(self,dt):
@@ -161,29 +162,45 @@ class FluidParticle(Particle):
         #Poly6 커널함수 이용해 density 추가
         #315(smoothing_radius**2-dist**2)**3 / 64pismoothing_radius**9
         #약 4.9
-        c = 4.9/(pi*self.radius**9)
-        w = c*(self.radius**2-dist**2)**3
+        # c = 4.9/(pi*self.radius**9)
+        # w = c*(self.radius**2-dist**2)**3
+        
+        #self.radius**9로 나눠 매우 작은 값이 되어버림
+        #spiky kernel로 대체
+
+        c = 10/(pi*self.radius**5)
+        w = c*(self.radius-dist)**3
         self.density += w
         p2.density += w
 
     def densityToSPressure(self):
         #밀도를 압력으로 변환
         # K(density-optimaldensity)  K : 충분히 큰 상수 optimal_density : 상수
-        return 5000* (self.density-1)
+        return 1500* (self.density-0.05)
 
     def makePressure(self,p2,dirv,dist):
         Pi = max(self.densityToSPressure(),0) #self density to pressure
-        Pj = (p2.densityToSPressure(),0) #p2 density to pressure
+        Pj = max(p2.densityToSPressure(),0) #p2 density to pressure
 
         #Spiky 커널함수 gradient 이용 (Poly6은 x=0에서 미분불가?)
-        # -45(smoothing_radius-dist)**2 dirv / pi*smoothing_radius**6
-        c = -45/(pi*self.radius**6)
+        # -30(smoothing_radius-dist)**2 dirv / pi*smoothing_radius**5
+        c = -30/(pi*self.radius**5)
         gradw = (c*(self.radius-dist)**2 )* dirv
 
         # Fi(i(self)로의 압력) = -(Pi/self.density**2 + Pj/p2.density**2)grad(W(커널함수))
         f = -(Pi/self.density**2 + Pj/p2.density**2) * gradw 
         self.pressure+=f
         p2.pressure-=f
+
+    def makeViscosity(self,p2,dist):
+        #점성 추가
+        # 2D viscosity 함수 라플라시안 사용
+        u = 0.01
+        c = 20 / (pi*self.radius**5)
+        lapw = c*(self.radius-dist)
+        self.viscosity += u*(p2.v-self.v) * lapw
+        p2.viscosity += u*(self.v-p2.v) * lapw
+        
 
 
 class GasParticle(Particle):
