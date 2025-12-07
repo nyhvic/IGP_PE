@@ -1,7 +1,6 @@
 import pygame as pg
 from src.particle import *
 from src.groups import *
-import random
 from src.particlemanager import *
 import src.constans as C
 import sys
