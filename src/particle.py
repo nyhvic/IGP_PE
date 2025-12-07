@@ -53,8 +53,7 @@ class Particle(pg.sprite.Sprite):
             self.pos.x = C.WIDTH - self.radius
             self.v.x *=-0.3
         if self.pos.y < self.radius:
-            self.pos.y = self.radius
-            self.v.y *=-0.3
+            self.kill()
         elif self.pos.y > C.HEIGHT - self.radius:
             self.pos.y = C.HEIGHT - self.radius
             self.v.y *=-0.3
@@ -98,8 +97,10 @@ class SolidParticle(Particle):
             super().handleCollision(other)
 
         elif isinstance(other,FluidParticle):
-            effect = other.v*0.1
+            effect = 0.2 * (other.v - self.v)
             self.v+=effect
+            other.v-= effect
+            self.v.y -= 0.3
 
 
 
@@ -131,9 +132,12 @@ class FluidParticle(Particle):
 
     def handleCollision(self,other):
         if isinstance(other,SolidParticle):
-            effect = other.v*0.1
+            effect = 0.2*(other.v - self.v)
             self.v+=effect
-            self.lifetime = 1
+            other.v-=effect
+            other.v.y -= 0.3
+        elif isinstance(other,GasParticle):
+            other.lifetime = 0.1
         else:
             super().handleCollision(other)
 
@@ -158,7 +162,7 @@ class FluidParticle(Particle):
         self.checkLife()
         self.checkOut()
 
-    def makeDensity(self,p2,dist):
+    def makeDensity(self,other,dist):
         #Poly6 커널함수 이용해 density 추가
         #315(smoothing_radius**2-dist**2)**3 / 64pismoothing_radius**9
         #약 4.9
@@ -171,16 +175,16 @@ class FluidParticle(Particle):
         c = 10/(pi*self.radius**5)
         w = c*(self.radius-dist)**3
         self.density += w
-        p2.density += w
+        other.density += w
 
     def densityToSPressure(self):
         #밀도를 압력으로 변환
         # K(density-optimaldensity)  K : 충분히 큰 상수 optimal_density : 상수
-        return 30000* (self.density-0.05)
+        return 5000* (self.density-0.05)
 
-    def makePressure(self,p2,dirv,dist):
+    def makePressure(self,other,dirv,dist):
         Pi = max(self.densityToSPressure(),0) #self density to pressure
-        Pj = max(p2.densityToSPressure(),0) #p2 density to pressure
+        Pj = max(other.densityToSPressure(),0) #p2 density to pressure
 
         #Spiky 커널함수 gradient 이용 (Poly6은 x=0에서 미분불가?)
         # -30(smoothing_radius-dist)**2 dirv / pi*smoothing_radius**5
@@ -188,18 +192,18 @@ class FluidParticle(Particle):
         gradw = (c*(self.radius-dist)**2 )* dirv
 
         # Fi(i(self)로의 압력) = -(Pi/self.density**2 + Pj/p2.density**2)grad(W(커널함수))
-        f = -(Pi/self.density**2 + Pj/p2.density**2) * gradw 
+        f = -(Pi/self.density**2 + Pj/other.density**2) * gradw 
         self.pressure+=f
-        p2.pressure-=f
+        other.pressure-=f
 
-    def makeViscosity(self,p2,dist):
+    def makeViscosity(self,other,dist):
         #점성 추가
         # 2D viscosity 함수 라플라시안 사용
         u = 0.03
         c = 20 / (pi*self.radius**5)
         lapw = c*(self.radius-dist)
-        self.viscosity += u*(p2.v-self.v) * lapw
-        p2.viscosity += u*(self.v-p2.v) * lapw
+        self.viscosity += u*(other.v-self.v) * lapw
+        other.viscosity += u*(self.v-other.v) * lapw
         
 
 
@@ -227,27 +231,27 @@ def collisionCheckParticle(particleGroup):
 
 
 
-def checkCollisionsGrid(particles, cellSize=16):
+def checkCollisionsGrid(particles, gridSize=16):
     #일정 크기 grid로 나누고 주변 grid 내의 object와 충돌 비교함
     grid = {}
     
     for p in particles:
-        grid_x = int(p.pos.x // cellSize)
-        grid_y = int(p.pos.y // cellSize)
-        key = (grid_x, grid_y)
+        gridX = int(p.pos.x // gridSize)
+        gridY = int(p.pos.y // gridSize)
+        key = (gridX, gridY)
         
         if key not in grid:
             grid[key] = []
         grid[key].append(p)
 
-    neighbor_offsets = [(0,0),(1,0),(0,1),(1,1)]
+    neighborOffsets = [(0,0),(1,0),(0,1),(1,1)]
 
-    for (gx, gy), cell_particles in grid.items():
-        for p1 in cell_particles:
-            for dx, dy in neighbor_offsets:
-                neighbor_key = (gx + dx, gy + dy)
-                if neighbor_key in grid:
-                    for p2 in grid[neighbor_key]:
+    for (gx, gy), girdParticles in grid.items():
+        for p1 in girdParticles:
+            for dx, dy in neighborOffsets:
+                neighborKey = (gx + dx, gy + dy)
+                if neighborKey in grid:
+                    for p2 in grid[neighborKey]:
                         if id(p1) >= id(p2):
                             continue
                         dist = p1.pos.distance_squared_to(p2.pos)
@@ -259,13 +263,8 @@ def checkCollisionsGrid(particles, cellSize=16):
 
 
 '''
-all particle group
+입자간 충돌
+액체 다른입자 충돌 점성 적용
 
-particle manager
-
-점성 적용
-
-테스트/시연용 (단축키, 배치, clear)
-
-fire, explosion
+fire, explosion2
 '''

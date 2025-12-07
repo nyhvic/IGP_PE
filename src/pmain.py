@@ -13,23 +13,6 @@ particleGroup = pg.sprite.Group()
 fluidParticleGroup = FluidGroup()
 particleManager = ParticleManager(particleGroup,fluidParticleGroup)
 
-# for _ in range(1000):
-#     x = random.uniform(0, C.WIDTH)
-#     y = random.uniform(0, C.HEIGHT)
-#     vx = random.uniform(-100, 100) 
-#     vy = random.uniform(-100, 100)
-#     size = 4
-#     color = 'white'
-#     SolidParticle(color=color, groups=particleGroup, vx=vx, vy=vy, x=x, y=y, size=size)
-
-for _ in range(1000):
-    x = random.uniform(200,500)
-    y = random.uniform(200,700)
-    vx = random.uniform(-10, 10) 
-    vy = random.uniform(-10, 10)
-    radius = 8
-    FluidParticle(color='blue',groups=(particleGroup,fluidParticleGroup), vx=vx, vy=vy, x=x, y=y,radius=radius)
-
 def main_loop():
     while True:
         for event in pg.event.get():
@@ -40,6 +23,16 @@ def main_loop():
                     particleManager.toggleRain()
                 if event.key == pg.K_c:
                     particleManager.clear()
+                if event.key == pg.K_a:
+                    particleManager.mode = C.NONE_MODE
+                if event.key == pg.K_s:
+                    particleManager.mode = C.SOLID_MODE
+                if event.key == pg.K_d:
+                    particleManager.mode = C.FLUID_MODE
+                if event.key == pg.K_f:
+                    particleManager.mode = C.GAS_MODE
+        if pg.mouse.get_pressed()[0]:
+            particleManager.click(pg.mouse.get_pos())
 
         dt = clock.tick(C.FPS)/1000
         screen.fill((0,0,0))

@@ -14,22 +14,22 @@ class FluidGroup(pg.sprite.Group):
         grid = {}
     
         for p in self.sprites():
-            grid_x = int(p.pos.x // cellSize)
-            grid_y = int(p.pos.y // cellSize)
-            key = (grid_x, grid_y)
+            gridX = int(p.pos.x // cellSize)
+            gridY = int(p.pos.y // cellSize)
+            key = (gridX, gridY)
             if key not in grid:
                 grid[key] = []
             grid[key].append(p)
 
-        neighbor_offsets = [(0,0),(1,0),(0,1),(1,1)]
+        neighborOffsets = [(0,0),(1,0),(0,1),(1,1)]
 
         #밀도 계산
-        for (gx, gy), cell_particles in grid.items():
-            for p1 in cell_particles:
-                for dx, dy in neighbor_offsets:
-                    neighbor_key = (gx + dx, gy + dy)
-                    if neighbor_key in grid:
-                        for p2 in grid[neighbor_key]:
+        for (gx, gy), gridParticles in grid.items():
+            for p1 in gridParticles:
+                for dx, dy in neighborOffsets:
+                    neighborKey = (gx + dx, gy + dy)
+                    if neighborKey in grid:
+                        for p2 in grid[neighborKey]:
                             if id(p1) >= id(p2):
                                 continue
                             
@@ -39,12 +39,12 @@ class FluidGroup(pg.sprite.Group):
                                 p1.makeDensity(p2,dist)
 
         #밀도 이용해서 압력 계산
-        for (gx, gy), cell_particles in grid.items():
-            for p1 in cell_particles:
-                for dx, dy in neighbor_offsets:
-                    neighbor_key = (gx + dx, gy + dy)
-                    if neighbor_key in grid:
-                        for p2 in grid[neighbor_key]:
+        for (gx, gy), gridParticles in grid.items():
+            for p1 in gridParticles:
+                for dx, dy in neighborOffsets:
+                    neighborKey = (gx + dx, gy + dy)
+                    if neighborKey in grid:
+                        for p2 in grid[neighborKey]:
                             if id(p1) >= id(p2):
                                 continue
                             
