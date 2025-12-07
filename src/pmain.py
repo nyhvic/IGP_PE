@@ -4,6 +4,7 @@ from src.groups import *
 import random
 from src.particlemanager import *
 import src.constans as C
+import sys
 
 
 pg.init()
@@ -17,7 +18,7 @@ def main_loop():
     while True:
         for event in pg.event.get():
             if event.type == pg.QUIT:
-                exit()
+                sys.exit()
             if event.type == pg.KEYDOWN:
                 if event.key == pg.K_r:
                     particleManager.toggleRain()
