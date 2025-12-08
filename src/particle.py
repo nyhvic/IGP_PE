@@ -141,9 +141,10 @@ class FluidParticle(Particle):
         else:
             super().handleCollision(other)
 
-    def initDensityPressure(self):
+    def initDensityPressureViscosity(self):
         self.density = 1.e-8
         self.pressure = pg.math.Vector2(0,0)
+        self.viscosity = pg.math.Vector2(0,0)
 
     def velocityVarletHalf(self,dt):
         #Velocity Varlet 이용 (2nd order)

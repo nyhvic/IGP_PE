@@ -5,9 +5,9 @@ class FluidGroup(pg.sprite.Group):
     def __init__(self, *sprites):
         super().__init__(*sprites)
 
-    def initDensityPressure(self):
+    def initDensityPressureViscosity(self):
         for p in self.sprites():
-            p.initDensityPressure()
+            p.initDensityPressureViscosity()
 
     def nearbyUpdate(self,dt,cellSize=16):
         #nearby 계산
