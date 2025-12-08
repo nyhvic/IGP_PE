@@ -36,7 +36,7 @@ class ParticleManager:
             vy = random.uniform(0, 100)
             radius = 8
             self.addFluidParticle(x=x,y=y,vx=vx,vy=vy,radius=radius)
-        self.fluidParticleGroup.initDensityPressure()
+        self.fluidParticleGroup.initDensityPressureViscosity()
         checkCollisionsGrid(self.particleGroup)
         self.particleGroup.update(dt)
         self.fluidParticleGroup.nearbyUpdate(dt)
