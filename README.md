@@ -1,5 +1,6 @@
-# IGP_PE
 게임프로그래밍 입문
+
+![Show](https://github.com/user-attachments/assets/02518b5f-17c9-408a-baa6-a74639d389a7)
 
 
 Velocity Verlet 참고자료
